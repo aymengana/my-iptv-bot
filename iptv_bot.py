@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import os
 import time
 import requests
@@ -21,49 +21,69 @@ def get_raw_iptv_link(user, pwd):
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    
-    # تحديد مسار الكروم للسيرفر (هام جداً لـ Render)
-    chrome_options.binary_location = "/usr/bin/google-chrome"
+    chrome_options.add_argument("--window-size=1920,1080")
+    # إضافة User-Agent حقيقي لتجنب حظر السيرفرات
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
     
     driver = None
     try:
+        # استخدام التثبيت التلقائي المناسب لبيئة Render
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
+        
         driver.get("https://moodtv.xyz/create.php")
         
         wait = WebDriverWait(driver, 30)
+        # البحث عن خانة اليوزر بمرونة أكبر
         user_field = wait.until(EC.presence_of_element_located((By.NAME, "username")))
         
         user_field.send_keys(user)
         driver.find_element(By.NAME, "password").send_keys(pwd)
         
+        # حل الكابتشا
         captcha_text = driver.find_element(By.ID, "captcha_label").text
         result = eval(captcha_text.replace('=', '').strip())
         
         driver.find_element(By.NAME, "captcha").send_keys(str(result))
-        driver.find_element(By.NAME, "submit").click()
         
-        time.sleep(10)
+        # محاولة الضغط على الزر بطريقة تضمن التنفيذ
+        submit_btn = driver.find_element(By.NAME, "submit")
+        driver.execute_script("arguments[0].click();", submit_btn)
+        
+        # انتظار كافٍ لتحميل الصفحة التالية
+        time.sleep(15)
+        
         final_url = driver.current_url
-        return final_url if "create.php" not in final_url else None
-    except:
+        if "create.php" not in final_url:
+            return final_url
+        return None
+    except Exception as e:
+        print(f"Detail error: {e}")
         return None
     finally:
-        if driver: driver.quit()
+        if driver:
+            driver.quit()
 
-async def start(update, context):
-    await update.message.reply_text("🚀 أرسل اليوزر والباسورد (user:pass)")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🚀 البوت جاهز! أرسل البيانات هكذا: `user:pass`")
 
-async def handle_msg(update, context):
-    if ":" in update.message.text:
-        user, pwd = update.message.text.split(":", 1)
-        m = await update.message.reply_text("⏳ جاري العمل...")
+async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if ":" in text:
+        user, pwd = text.split(":", 1)
+        m = await update.message.reply_text("⏳ جاري إنشاء الرابط... قد يستغرق الأمر 20 ثانية")
+        
         link = get_raw_iptv_link(user.strip(), pwd.strip())
+        
         if link:
-            res = requests.get(f"https://nitro-link.com/api?api={NITRO_API_KEY}&url={link}&format=text")
-            await m.edit_text(f"✅ تم بنجاح:\n{res.text}")
+            # اختصار الرابط
+            api_url = f"https://nitro-link.com/api?api={NITRO_API_KEY}&url={link}&format=text"
+            final_link = requests.get(api_url).text.strip()
+            await m.edit_text(f"✅ تم الإنشاء بنجاح!\n🔗 رابطك: {final_link}")
         else:
-            await m.edit_text("❌ حدث خطأ، جرب بيانات أخرى.")
+            await m.edit_text("❌ لم ينجح الأمر. تأكد أن اليوزر جديد تماماً ولم يُستخدم من قبل.")
+    else:
+        await update.message.reply_text("⚠️ أرسل البيانات بصيغة `user:pass`")
 
 if __name__ == '__main__':
     app = Application.builder().token(BOT_TOKEN).build()
