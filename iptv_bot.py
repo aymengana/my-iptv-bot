@@ -4,28 +4,31 @@ from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# --- 1. سيرفر الويب لاستقرار Render ---
+# --- 1. سيرفر الويب لضمان عمل Render ---
 web_app = Flask(__name__)
 @web_app.route('/')
 def home(): return "Iptv24 System is Online!"
 
 def run_flask():
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 10000)) # المنفذ المتوافق مع سجلاتك
     web_app.run(host='0.0.0.0', port=port)
 
 # --- 2. الإعدادات ---
-BOT_TOKEN = '8312066648:AAHjUdrO0A-SpMCOOS23MsQsBZIgmP7pS3A'
+BOT_TOKEN = '8312066648:AAFNatDZOZY9utlQNBWK1Jj_5MVvDe0UySw'
 
-# 🟢 ضعه هنا: استبدل الرابط أدناه برابطك المختصر الذي يحتوي على الكود 88220033
-MY_SHORT_LINK = "https://linkjust.com/YP7Q" 
+# الرابط المختصر الخاص بك
+MY_LINK = "https://linkjust.com/YP7Q" 
 
+# كود التفعيل الرقمي
 ACTIVATION_CODE = "88220033" 
+
+# سجل الحماية
 user_logs = {}
 
 # --- 3. وظائف البوت ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # إنشاء زر يوجه المستخدم مباشرة للرابط المختصر
-    keyboard = [[InlineKeyboardButton("🔗 اضغط هنا لجلب كود التفعيل", url=https://linkjust.com/YP7Q)]]
+    # إنشاء الزر بشكل صحيح برمجياً لتجنب SyntaxError
+    keyboard = [[InlineKeyboardButton("🔗 اضغط هنا لجلب كود التفعيل", url=MY_LINK)]]
     
     welcome_text = (
         "👋 مرحباً بك في Iptv24\n"
@@ -67,5 +70,5 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_activation))
     
-    # حل مشكلة Conflict وتنظيف الجلسات القديمة
+    # تنظيف التحديثات العالقة لحل مشكلة Conflict نهائياً
     app.run_polling(drop_pending_updates=True)
