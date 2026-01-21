@@ -1,92 +1,68 @@
 # -*- coding: utf-8 -*-
-import os, threading, random, string
+import os, threading, requests, re
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-# --- تشغيل سيرفر الويب لمنع توقف Render ---
+# --- تشغيل سيرفر Port لحل مشكلة Render المجاني ---
 web_app = Flask(__name__)
 @web_app.route('/')
-def home(): return "Iptv24 VIP Generator is Online!"
+def home(): return "Bot is Live!"
 
 def run_flask():
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 8080))
     web_app.run(host='0.0.0.0', port=port)
 
 # --- إعدادات البوت ---
 BOT_TOKEN = '8312066648:AAEWpmkMX6WG-wZt9pLQkKPhbRCULoMfQXk'
-
-# مولد بيانات VIP احترافي
-def generate_vip_account():
-    hosts = [
-        "http://premium-v.iptv24.pro:8080", 
-        "http://vip-server.iptv24.tv:2095", 
-        "http://ultra-24.iptv24.net:80"
-    ]
-    countries = ["🇩🇿 Algeria", "🇲🇦 Morocco", "🇸🇦 Saudi Arabia", "🇪🇬 Egypt", "🇫🇷 France", "🇩🇪 Germany"]
-    
-    user = "vip_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-    pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=9))
-    
-    return {
-        "host": random.choice(hosts),
-        "user": user,
-        "pass": pwd,
-        "country": random.choice(countries),
-        "conn": random.randint(1, 4), # عدد الأجهزة المسموح بها
-        "expiry": "2026-01-22" # صلاحية 24 ساعة كما في الوصف
-    }
+# استبدل الرابط أدناه برابط الصورة الحقيقية بعد رفعها
+PHOTO_URL = 'https://telegra.ph/file/your_image_link.jpg' 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # واجهة احترافية متوافقة مع شعار iptv24/24free
-    keyboard = [[InlineKeyboardButton("⚡️ توليد سيرفر VIP حصري", callback_data='gen')]]
+    keyboard = [
+        [InlineKeyboardButton("⚡️ استخراج كود IPTV", callback_data='gen')],
+        [InlineKeyboardButton("📢 قناة التحديثات", url="https://t.me/Iptv24_Bot")]
+    ]
+    # تم تبسيط النص لتجنب أخطاء التنسيق (Parse Entities)
     welcome_text = (
-        "👋 أهلاً بك في نظام Iptv24 المطور\n"
+        "👋 أهلاً بك في Iptv24_Bot\n"
         "━━━━━━━━━━━━━━\n"
-        "اضغط أدناه لاستخراج بيانات سيرفرك الخاص:"
+        "أسرع نظام لتوليد الحسابات مجاناً.\n"
+        "اضغط على الزر أدناه للبدء:"
     )
-    await update.message.reply_text(welcome_text, reply_markup=InlineKeyboardMarkup(keyboard))
+    try:
+        await update.message.reply_photo(photo=PHOTO_URL, caption=welcome_text, reply_markup=InlineKeyboardMarkup(keyboard))
+    except:
+        await update.message.reply_text(welcome_text, reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def handle_gen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    await query.edit_message_text(text="🔍 جاري فحص السيرفرات المتاحة... يرجى الانتظار.")
+    # تحديث النص مع التأكد من عدم وجود رموز Markdown خاطئة
+    await query.edit_message_caption(caption="🔄 جاري جلب البيانات من السيرفر...")
     
-    # جلب البيانات من المولد
-    d = generate_vip_account()
-    
-    # تنسيق البطاقة الاحترافية بدون رموز تسبب أخطاء Parse
-    result_card = (
-        "✅ تم إنشاء السيرفر بنجاح!\n"
-        "━━━━━━━━━━━━━━\n"
-        f"🌐 HOST: {d['host']}\n"
-        f"👤 USER: {d['user']}\n"
-        f"🔑 PASS: {d['pass']}\n"
-        "━━━━━━━━━━━━━━\n"
-        f"📍 COUNTRY: {d['country']}\n"
-        f"👥 MAX CONN: {d['conn']} Devices\n"
-        f"⏳ EXPIRY: {d['expiry']} (24H)\n"
-        "━━━━━━━━━━━━━━\n"
-        "🚀 انسخ البيانات واستمتع بالمشاهدة."
-    )
-    
-    back_btn = [[InlineKeyboardButton("🔙 توليد سيرفر جديد", callback_data='back')]]
-    await query.edit_message_text(text=result_card, reply_markup=InlineKeyboardMarkup(back_btn))
+    try:
+        res = requests.get("https://auziatv.com/index.php", timeout=10).text
+        host = re.search(r'http://[a-zA-Z0-9.-]+:[0-9]+', res).group(0)
+        user = re.search(r'Username[:\s]+([a-zA-Z0-9_-]+)', res, re.I).group(1)
+        pwd = re.search(r'Password[:\s]+([a-zA-Z0-9_-]+)', res, re.I).group(1)
 
-async def handle_back(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    keyboard = [[InlineKeyboardButton("⚡️ توليد سيرفر VIP حصري", callback_data='gen')]]
-    await query.edit_message_text(text="👋 اضغط للبدء من جديد:", reply_markup=InlineKeyboardMarkup(keyboard))
+        result_card = (
+            "🚀 بيانات حسابك جاهزة:\n\n"
+            f"🌐 SERVER: {host}\n"
+            f"👤 USER: {user}\n"
+            f"🔑 PASS: {pwd}\n\n"
+            "✅ انسخ البيانات واستمتع بالمشاهدة."
+        )
+        await query.edit_message_caption(caption=result_card)
+    except:
+        await query.edit_message_caption(caption="❌ فشل السحب آلياً، يرجى المحاولة لاحقاً.")
 
 if __name__ == '__main__':
     threading.Thread(target=run_flask).start()
-    
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(handle_gen, pattern='gen'))
-    app.add_handler(CallbackQueryHandler(handle_back, pattern='back'))
-    
-    # تنظيف التحديثات السابقة فوراً لحل مشكلة Conflict
+    app.add_handler(CallbackQueryHandler(handle_gen))
+    # تنظيف التحديثات العالقة لمنع تضارب النسخ
     app.run_polling(drop_pending_updates=True)
