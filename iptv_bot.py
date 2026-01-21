@@ -2,53 +2,59 @@
 import requests
 import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # التوكن الخاص بك
 BOT_TOKEN = '8312066648:AAHokvDUYpptDRQfeoSrvPaFj3LmA021RuE'
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # واجهة نظيفة جداً بأزرار
-    keyboard = [[InlineKeyboardButton("⚡️ تفعيل الحساب آلياً", callback_data='activate')],
-                [InlineKeyboardButton("🔗 رابط الكود اليدوي", url="https://auziatv.com/index.php")]]
+    # واجهة نظيفة جداً كأنها تطبيق
+    keyboard = [
+        [InlineKeyboardButton("⚡️ توليد حساب جديد", callback_data='gen')],
+        [InlineKeyboardButton("🔗 رابط الموقع الرسمي", url="https://auziatv.com/index.php")]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "👋 **أهلاً بك في بوت Mix TV الجديد**\n\n"
-        "يرجى اختيار الخدمة المطلوبة من الأزرار أدناه 👇",
+        "💎 **أهلاً بك في MIX-TV PREMIUM**\n"
+        "╼╼╼╼╼╼╼╼╼╼╼╼╼╼╼\n"
+        "الرجاء الضغط على الزر أدناه لبدء التفعيل الآلي.",
         reply_markup=reply_markup,
         parse_mode='Markdown'
     )
 
-async def handle_activation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # هذه الدالة ستعمل عند كتابة "تفعيل" أو الضغط على الزر
-    status_msg = await update.message.reply_text("🔄 **جاري المعالجة الذكية...**")
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
     
-    try:
-        # محاولة التخطي والاستخراج الصامت
-        response = requests.get("https://auziatv.com/index.php", timeout=15).text
+    if query.data == 'gen':
+        await query.edit_message_text("🔄 **جاري اختصار الروابط وسحب البيانات...**")
         
-        # استخراج البيانات الحقيقية
-        host = re.search(r'http://[a-zA-Z0-9.-]+:[0-9]+', response).group(0)
-        user = re.search(r'Username[:\s]+([a-zA-Z0-9_-]+)', response, re.I).group(1)
-        pwd = re.search(r'Password[:\s]+([a-zA-Z0-9_-]+)', response, re.I).group(1)
+        try:
+            # محاكاة التخطي الصامت للموقع
+            res = requests.get("https://auziatv.com/index.php", timeout=15).text
+            host = re.search(r'http://[a-zA-Z0-9.-]+:[0-9]+', res).group(0)
+            user = re.search(r'Username[:\s]+([a-zA-Z0-9_-]+)', res, re.I).group(1)
+            pwd = re.search(r'Password[:\s]+([a-zA-Z0-9_-]+)', res, re.I).group(1)
 
-        # عرض البيانات في بطاقة VIP نظيفة جداً
-        card = (
-            "💎 **بيانات اشتراكك جاهزة**\n"
-            "╼╼╼╼╼╼╼╼╼╼╼╼╼╼╼\n"
-            f"🌐 **HOST:** `{host}`\n"
-            f"👤 **USER:** `{user}`\n"
-            f"🔑 **PASS:** `{pwd}`\n"
-            "╼╼╼╼╼╼╼╼╼╼╼╼╼╼╼\n"
-            "✨ *اضغط على أي قيمة لنسخها فوراً.*"
-        )
-        await status_msg.edit_text(card, parse_mode='Markdown')
-    except:
-        await status_msg.edit_text("❌ **عذراً!** الحماية حالياً مرتفعة، يرجى استخدام الرابط اليدوي.")
+            # بطاقة البيانات الأنيقة
+            card = (
+                "🚀 **تم استخراج الحساب بنجاح**\n"
+                "╼╼╼╼╼╼╼╼╼╼╼╼╼╼╼\n"
+                f"🌐 **HOST:** `{host}`\n"
+                f"👤 **USER:** `{user}`\n"
+                f"🔑 **PASS:** `{pwd}`\n"
+                "╼╼╼╼╼╼╼╼╼╼╼╼╼╼╼\n"
+                "✅ *انقر على أي قيمة لنسخها فوراً.*"
+            )
+            await query.edit_message_text(card, parse_mode='Markdown')
+        except:
+            await query.edit_message_text("❌ **فشل التخطي الآلي حالياً.**\nيرجى استخدام الرابط اليدوي من القائمة.")
 
 if __name__ == '__main__':
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.Regex('^تفعيل$'), handle_activation))
-    app.run_polling(drop_pending_updates=True) # لإنهاء تضارب Logs
+    app.add_handler(CallbackQueryHandler(button_handler))
+    
+    # قتل أي جلسات قديمة لمنع التضارب
+    app.run_polling(drop_pending_updates=True)
