@@ -3,26 +3,27 @@ import requests, re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-# التوكن الخاص بـ Iptv24_Bot
+# التوكن الخاص بك
 BOT_TOKEN = '8312066648:AAEWpmkMX6WG-wZt9pLQkKPhbRCULoMfQXk'
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # واجهة Iptv24_Bot الاحترافية بنظام الأزرار
+    # تصميم الأزرار (البُطونات) تحت اسم البوت الجديد
     keyboard = [
-        [InlineKeyboardButton("⚡️ استخراج كود IPTV مجاني", callback_data='gen')],
+        [InlineKeyboardButton("⚡️ توليد كود IPTV جديد", callback_data='gen')],
         [
-            InlineKeyboardButton("📖 دليل التشغيل", callback_data='help'),
-            InlineKeyboardButton("🌐 موقع الأكواد", url="https://auziatv.com/index.php")
+            InlineKeyboardButton("📖 طريقة الاستخدام", callback_data='help'),
+            InlineKeyboardButton("🌐 موقعنا الرسمي", url="https://auziatv.com/index.php")
         ],
-        [InlineKeyboardButton("📢 قناة التحديثات", url="https://t.me/Iptv24_News")]
+        [InlineKeyboardButton("📢 قناة التحديثات", url="https://t.me/YourNewChannel")]
     ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     
+    # رسالة الترحيب بالاسم الجديد
     await update.message.reply_text(
-        "👋 **أهلاً بك في Iptv24_Bot الرسمي**\n"
+        "👋 **مرحباً بك في بوتك الاحترافي**\n"
         "━━━━━━━━━━━━━━\n"
-        "أسرع نظام لتوليد بيانات IPTV آلياً وبدون إعلانات مزعجة.\n\n"
-        "يرجى الضغط على الزر أدناه للبدء 👇",
-        reply_markup=InlineKeyboardMarkup(keyboard),
+        "أهلاً بك في الواجهة الجديدة. يرجى اختيار ما تريد القيام به:",
+        reply_markup=reply_markup,
         parse_mode='Markdown'
     )
 
@@ -31,56 +32,60 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     if query.data == 'gen':
-        # تحديث الرسالة لمنع تراكم النصوص في المحادثة
-        await query.edit_message_text("🔄 **جاري اختصار الروابط وسحب البيانات...**")
+        # تحديث نفس الرسالة يمنع تكرار النصوص
+        await query.edit_message_text("🔄 **جاري استخراج البيانات من أجلك...**")
         try:
             with requests.Session() as s:
-                s.headers.update({'User-Agent': 'Mozilla/5.0'})
-                res = s.get("https://auziatv.com/index.php", timeout=12).text
-                
-                # استخراج البيانات الصافية
+                res = s.get("https://auziatv.com/index.php", timeout=10).text
                 host = re.search(r'http://[a-zA-Z0-9.-]+:[0-9]+', res).group(0)
                 user = re.search(r'Username[:\s]+([a-zA-Z0-9_-]+)', res, re.I).group(1)
                 pwd = re.search(r'Password[:\s]+([a-zA-Z0-9_-]+)', res, re.I).group(1)
 
                 card = (
-                    "🚀 **بيانات حسابك في Iptv24_Bot:**\n"
+                    "🎯 **بيانات حسابك جاهزة الآن:**\n"
                     "━━━━━━━━━━━━━━\n"
                     f"🌐 **HOST:** `{host}`\n"
                     f"👤 **USER:** `{user}`\n"
                     f"🔑 **PASS:** `{pwd}`\n"
                     "━━━━━━━━━━━━━━\n"
-                    "✅ *اضغط على أي قيمة أعلاه لنسخها فوراً.*"
+                    "✅ *اضغط على البيانات أعلاه لنسخها فوراً.*"
                 )
-                # إضافة زر للعودة بعد استلام الكود
-                back_btn = [[InlineKeyboardButton("🔙 العودة للقائمة", callback_data='back')]]
-                await query.edit_message_text(card, reply_markup=InlineKeyboardMarkup(back_btn), parse_mode='Markdown')
+                await query.edit_message_text(card, parse_mode='Markdown')
         except:
-            await query.edit_message_text("❌ **عذراً!** الموقع محمي حالياً، يرجى المحاولة بعد قليل.")
+            await query.edit_message_text("❌ حدث خطأ في الموقع الأصلي، يرجى المحاولة لاحقاً.")
 
     elif query.data == 'help':
+        # رسالة المساعدة داخل البوت
         help_text = (
-            "📖 **كيف تستفيد من Iptv24_Bot؟**\n\n"
-            "1. اضغط على 'استخراج كود'.\n"
-            "2. سيقوم البوت بتخطي الروابط نيابة عنك.\n"
-            "3. انسخ البيانات وضعها في تطبيق IPTV Smarters.\n"
-            "📺 مشاهدة ممتعة!"
+            "📖 **دليل الاستخدام السريع:**\n"
+            "1️⃣ اضغط على زر 'توليد كود'.\n"
+            "2️⃣ انسخ البيانات التي ستظهر لك.\n"
+            "3️⃣ ضعها في تطبيق IPTV المفضل لديك.\n"
+            "✨ مشاهدة ممتعة!"
         )
-        back_btn = [[InlineKeyboardButton("🔙 العودة للقائمة", callback_data='back')]]
-        await query.edit_message_text(help_text, reply_markup=InlineKeyboardMarkup(back_btn), parse_mode='Markdown')
+        back_button = [[InlineKeyboardButton("🔙 العودة للقائمة", callback_data='back')]]
+        await query.edit_message_text(help_text, reply_markup=InlineKeyboardMarkup(back_button))
 
     elif query.data == 'back':
-        # العودة للواجهة الرئيسية بدون رسائل مكررة
-        keyboard = [[InlineKeyboardButton("⚡️ استخراج كود IPTV مجاني", callback_data='gen')],
-                    [InlineKeyboardButton("📖 دليل التشغيل", callback_data='help'),
-                     InlineKeyboardButton("🌐 موقع الأكواد", url="https://auziatv.com/index.php")]]
-        await query.edit_message_text("👋 **أهلاً بك في Iptv24_Bot الرسمي**\n━━━━━━━━━━━━━━\nيرجى الاختيار:", 
-                                     reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+        # العودة للقائمة الرئيسية بنفس الرسالة
+        await start_back(query)
+
+async def start_back(query):
+    keyboard = [
+        [InlineKeyboardButton("⚡️ توليد كود IPTV جديد", callback_data='gen')],
+        [InlineKeyboardButton("📖 طريقة الاستخدام", callback_data='help'),
+         InlineKeyboardButton("🌐 موقعنا الرسمي", url="https://auziatv.com/index.php")]
+    ]
+    await query.edit_message_text(
+        "👋 **مرحباً بك في بوتك الاحترافي**\n━━━━━━━━━━━━━━\nيرجى الاختيار:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode='Markdown'
+    )
 
 if __name__ == '__main__':
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_buttons))
     
-    # ضمان عدم تضارب الرسائل أو التعليق (Conflict Fix)
+    # حل مشكلة الـ Conflict التي ظهرت في سجلاتك
     app.run_polling(drop_pending_updates=True)
