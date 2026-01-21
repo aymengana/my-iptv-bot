@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-import requests
-import re
+import requests, re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
@@ -8,38 +7,34 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 BOT_TOKEN = '8312066648:AAHokvDUYpptDRQfeoSrvPaFj3LmA021RuE'
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # واجهة نظيفة جداً كأنها تطبيق
-    keyboard = [
-        [InlineKeyboardButton("⚡️ توليد حساب جديد", callback_data='gen')],
-        [InlineKeyboardButton("🔗 رابط الموقع الرسمي", url="https://auziatv.com/index.php")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
+    # واجهة تطبيق نظيفة جداً تنهي مظهر الجروبات
+    keyboard = [[InlineKeyboardButton("⚡️ توليد حساب MIX-TV آلياً", callback_data='generate')]]
     await update.message.reply_text(
-        "💎 **أهلاً بك في MIX-TV PREMIUM**\n"
+        "💎 **نظام التفعيل الذكي لـ Mix TV**\n"
         "╼╼╼╼╼╼╼╼╼╼╼╼╼╼╼\n"
-        "الرجاء الضغط على الزر أدناه لبدء التفعيل الآلي.",
-        reply_markup=reply_markup,
+        "مرحباً بك. اضغط على الزر أدناه للحصول على بياناتك فوراً.",
+        reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode='Markdown'
     )
 
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    if query.data == 'gen':
-        await query.edit_message_text("🔄 **جاري اختصار الروابط وسحب البيانات...**")
-        
-        try:
-            # محاكاة التخطي الصامت للموقع
-            res = requests.get("https://auziatv.com/index.php", timeout=15).text
+    # تحديث نفس الرسالة يمنع التلوث البصري وتكرار النصوص
+    await query.edit_message_text("🔄 **جاري اختصار الروابط وسحب البيانات...**")
+    
+    try:
+        # عملية سحب البيانات الحقيقية من AuziaTV
+        with requests.Session() as s:
+            res = s.get("https://auziatv.com/index.php", timeout=12).text
             host = re.search(r'http://[a-zA-Z0-9.-]+:[0-9]+', res).group(0)
             user = re.search(r'Username[:\s]+([a-zA-Z0-9_-]+)', res, re.I).group(1)
             pwd = re.search(r'Password[:\s]+([a-zA-Z0-9_-]+)', res, re.I).group(1)
 
-            # بطاقة البيانات الأنيقة
+            # بطاقة VIP النهائية - سهلة النسخ ومنظمة
             card = (
-                "🚀 **تم استخراج الحساب بنجاح**\n"
+                "🎯 **تم تجهيز الحساب بنجاح**\n"
                 "╼╼╼╼╼╼╼╼╼╼╼╼╼╼╼\n"
                 f"🌐 **HOST:** `{host}`\n"
                 f"👤 **USER:** `{user}`\n"
@@ -48,13 +43,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "✅ *انقر على أي قيمة لنسخها فوراً.*"
             )
             await query.edit_message_text(card, parse_mode='Markdown')
-        except:
-            await query.edit_message_text("❌ **فشل التخطي الآلي حالياً.**\nيرجى استخدام الرابط اليدوي من القائمة.")
+    except:
+        await query.edit_message_text("❌ **فشل التخطي الآلي حالياً.**\nيرجى المحاولة بعد دقائق أو استخدام الرابط اليدوي.")
 
 if __name__ == '__main__':
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(button_handler))
+    app.add_handler(CallbackQueryHandler(handle_callback))
     
-    # قتل أي جلسات قديمة لمنع التضارب
+    # تنظيف شامل لأي بيانات عالقة لضمان سرعة الاستجابة
     app.run_polling(drop_pending_updates=True)
