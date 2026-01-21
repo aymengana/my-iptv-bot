@@ -1,94 +1,73 @@
 # -*- coding: utf-8 -*-
-import os, threading, random, string
+import os, threading, random
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# --- سيرفر Port لضمان استقرار البوت على Render ---
+# --- 1. سيرفر الويب لضمان استقرار Render ---
 web_app = Flask(__name__)
 @web_app.route('/')
-def home(): return "Iptv24 VIP System is Active!"
+def home(): return "Iptv24 System is Active!"
 
 def run_flask():
-    # استخدام البورت 10000 كما يظهر في سجلاتك الأخيرة
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host='0.0.0.0', port=port)
 
-# --- إعدادات البوت بالتوكن الجديد ---
-BOT_TOKEN = '8312066648:AAHjUdrO0A-SpMCOOS23MsQsBZIgmP7pS3A'
+# --- 2. الإعدادات ---
+BOT_TOKEN = '8312066648:AAFNatDZOZY9utlQNBWK1Jj_5MVvDe0UySw'
 
-# دالة توليد بيانات سيرفر VIP متكاملة لزيادة الاحترافية
-def generate_vip_data():
-    hosts = [
-        "http://premium-v.iptv24.pro:8080", 
-        "http://vip-server.iptv24.tv:2095", 
-        "http://ultra-24.iptv24.net:80"
-    ]
-    countries = ["🇩🇿 Algeria", "🇲🇦 Morocco", "🇸🇦 Saudi Arabia", "🇪🇬 Egypt", "🇫🇷 France", "🇩🇪 Germany"]
-    
-    user = "vip_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-    pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=9))
-    
-    return {
-        "host": random.choice(hosts),
-        "user": user,
-        "pass": pwd,
-        "country": random.choice(countries),
-        "conn": random.randint(1, 4),
-        "expiry": "2026-01-22" # صلاحية 24 ساعة كما في بروفايل البوت
-    }
+# الكود الذي تضعه في اختصار الروابط (أرقام فقط)
+ACTIVATION_CODE = "88220033" 
 
+# سجل الحماية لمنع التكرار
+user_logs = {}
+
+# --- 3. وظائف البوت ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # واجهة احترافية تتناسب مع شعار iptv24/24free
-    keyboard = [[InlineKeyboardButton("⚡️ توليد سيرفر VIP حصري", callback_data='gen')]]
+    # رسالة احترافية متناسقة مع شعارك
     welcome_text = (
-        "👋 أهلاً بك في نظام Iptv24 المطور\n"
+        "👋 مرحباً بك في Iptv24\n"
         "━━━━━━━━━━━━━━\n"
-        "اضغط أدناه لاستخراج بيانات سيرفرك الخاص:"
+        "للحصول على بيانات السيرفر:\n"
+        "أرسل كود التفعيل (أرقام فقط) هنا 📥\n"
+        "━━━━━━━━━━━━━━"
     )
-    await update.message.reply_text(welcome_text, reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text(welcome_text)
 
-async def handle_gen(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+async def handle_activation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    user_text = update.message.text
     
-    # رسالة انتظار احترافية
-    await query.edit_message_text(text="🔍 جاري فحص السيرفرات المتاحة... يرجى الانتظار.")
-    
-    d = generate_vip_data()
-    
-    # تنسيق البطاقة الاحترافية بدون رموز تسبب أخطاء Parse
-    result_card = (
-        "✅ تم إنشاء السيرفر بنجاح!\n"
-        "━━━━━━━━━━━━━━\n"
-        f"🌐 HOST: {d['host']}\n"
-        f"👤 USER: {d['user']}\n"
-        f"🔑 PASS: {d['pass']}\n"
-        "━━━━━━━━━━━━━━\n"
-        f"📍 COUNTRY: {d['country']}\n"
-        f"👥 MAX CONN: {d['conn']} Devices\n"
-        f"⏳ EXPIRY: {d['expiry']} (24H)\n"
-        "━━━━━━━━━━━━━━\n"
-        "🚀 انسخ البيانات واستمتع بالمشاهدة."
-    )
-    
-    back_btn = [[InlineKeyboardButton("🔙 توليد سيرفر جديد", callback_data='back')]]
-    await query.edit_message_text(text=result_card, reply_markup=InlineKeyboardMarkup(back_btn))
+    # حماية من التكرار
+    if user_id in user_logs:
+        await update.message.reply_text("❌ لقد حصلت على حسابك بالفعل اليوم!")
+        return
 
-async def handle_back(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    keyboard = [[InlineKeyboardButton("⚡️ توليد سيرفر VIP حصري", callback_data='gen')]]
-    await query.edit_message_text(text="👋 اضغط للبدء من جديد:", reply_markup=InlineKeyboardMarkup(keyboard))
+    # التحقق من الكود الرقمي
+    if user_text == ACTIVATION_CODE:
+        user_logs[user_id] = True
+        
+        # بيانات السيرفر الخاص بك
+        success_msg = (
+            "✅ تم التحقق بنجاح!\n"
+            "━━━━━━━━━━━━━━\n"
+            "🌐 HOST: `http://top.cloud-ip.cc:2052` \n"
+            "👤 USER: `a128` \n"
+            "🔑 PASS: `a` \n"
+            "━━━━━━━━━━━━━━\n"
+            "🚀 انسخ البيانات واستمتع بالمشاهدة."
+        )
+        await update.message.reply_text(success_msg, parse_mode='Markdown')
+    else:
+        await update.message.reply_text("❌ الكود الرقمي غير صحيح!")
 
+# --- 4. التشغيل النهائي ---
 if __name__ == '__main__':
-    # تشغيل Flask في خيط منفصل لتجاوز فحص المنافذ في Render
     threading.Thread(target=run_flask).start()
     
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(handle_gen, pattern='gen'))
-    app.add_handler(CallbackQueryHandler(handle_back, pattern='back'))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_activation))
     
-    # حل مشكلة الـ Conflict بتنظيف التحديثات السابقة فوراً
+    # حل مشكلة Conflict وتنظيف الجلسات القديمة
     app.run_polling(drop_pending_updates=True)
