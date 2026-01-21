@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import requests
 import random
 import string
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -8,12 +7,10 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 # توكن البوت الخاص بك
 BOT_TOKEN = '8312066648:AAFHr1prjk642UaZExabW8jDr9S-lZxHsdo'
 
-def generate_user(length=7):
-    return "vip_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_name = update.effective_user.first_name
     welcome_text = (
-        "💎 **مرحباً بك في IPTV ELITE v3.0**\n"
+        f"💎 **مرحباً بك في IPTV ELITE v3.0**\n"
         "━━━━━━━━━━━━━━\n"
         "📺 **نظام توليد الاشتراكات الذكي يعمل الآن!**\n\n"
         "📊 **محتويات السيرفر الحالية:**\n"
@@ -23,22 +20,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "━━━━━━━━━━━━━━\n"
         "🚀 **للحصول على كودك الشخصي، أرسل أي رسالة.**"
     )
-    # إضافة زر شفاف للقناة
     keyboard = [[InlineKeyboardButton("📢 انضم لقناة التحديثات", url="https://t.me/your_channel")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode='Markdown')
 
 async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # إظهار رسالة جاري التحميل بشكل احترافي
+    # إظهار رسالة جاري التحميل
     status_msg = await update.message.reply_text("🔄 **جاري الاتصال بقاعدة البيانات...**", parse_mode='Markdown')
     
-    # بيانات السيرفر (تأكد من اختيار هوست شغال)
-    host = "http://freetv.fun:8080" 
-    user = generate_user()
-    pwd = generate_random_string(9) # سنستخدم الدالة السابقة أو نولدها مباشرة هنا
+    # توليد البيانات مباشرة داخل الدالة لتجنب الخطأ السابق
+    user = "vip_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=7))
     pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=9))
+    host = "http://freetv.fun:8080" 
 
-    # تصميم رسالة النتيجة النهائية مع قائمة القنوات
     response_text = (
         "✨ **تم توليد الاشتراك بنجاح!** ✨\n"
         "━━━━━━━━━━━━━━\n"
@@ -55,7 +49,6 @@ async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "⚠️ *هذا الكود تجريبي صالح لمدة 24 ساعة.*"
     )
     
-    # تحديث الرسالة بالبيانات النهائية
     await status_msg.edit_text(response_text, parse_mode='Markdown')
 
 if __name__ == '__main__':
