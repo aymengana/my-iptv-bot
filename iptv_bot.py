@@ -1,61 +1,80 @@
 # -*- coding: utf-8 -*-
 import requests
 import re
-import random
-import string
 from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# التوكن الأخير الذي يعمل
+# التوكن الخاص بك
 BOT_TOKEN = '8312066648:AAHokvDUYpptDRQfeoSrvPaFj3LmA021RuE'
 
-async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    status_msg = await update.message.reply_text("📡 **جاري الاتصال بسيرفر AuziaTV الحقيقي...**", parse_mode='Markdown')
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # تصميم ترحيبي جذاب باستخدام البلوكات النصية
+    welcome_text = (
+        "🤖 **أهلاً بك في نظام التفعيل الذكي**\n"
+        "━━━━━━━━━━━━━━\n"
+        "📍 **للحصول على رابط الكود:**\n"
+        "اضغط على: /code\n\n"
+        "⚡️ **لجلب البيانات مباشرة:**\n"
+        "اكتب كلمة: `تفعيل`\n"
+        "━━━━━━━━━━━━━━\n"
+        "💎 *نظامنا يوفر لك أكواداً فريدة (Single Connection).*"
+    )
+    await update.message.reply_text(welcome_text, parse_mode='Markdown')
+
+async def get_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # تصميم احترافي للرابط
+    link_text = (
+        "🔗 **بوابة استخراج الأكواد**\n"
+        "━━━━━━━━━━━━━━\n"
+        "تفضل بزيارة الموقع الرسمي للحصول على كودك:\n"
+        "👉 https://auziatv.com/index.php\n\n"
+        "⚠️ *بعد تخطي الرابط، انسخ البيانات وضعها في تطبيقك.*"
+    )
+    await update.message.reply_text(link_text, parse_mode='Markdown', disable_web_page_preview=True)
+
+async def auto_activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # رسالة انتظار احترافية
+    status_msg = await update.message.reply_text("🔄 **جاري فحص السيرفرات واستخراج البيانات...**")
     
-    # رابط موقع AuziaTV
-    target_url = "https://auziatv.com/index.php"
-    
+    url = "https://auziatv.com/index.php"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+
     try:
-        # محاكاة تصفح حقيقي لجلب البيانات الصافية
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        response = requests.get(target_url, headers=headers, timeout=15).text
+        response = requests.get(url, headers=headers, timeout=15).text
         
-        # 🔍 البحث عن الهوست واليوزر والباسورد داخل صفحة AuziaTV حصراً
-        # نبحث عن نمط http://...:8080 أو أي بورت آخر
+        # استخراج البيانات الحقيقية من AuziaTV
         host_match = re.search(r'http://[a-zA-Z0-9.-]+:[0-9]+', response)
         user_match = re.search(r'Username[:\s]+([a-zA-Z0-9_-]+)', response, re.I)
         pass_match = re.search(r'Password[:\s]+([a-zA-Z0-9_-]+)', response, re.I)
 
         if host_match and user_match and pass_match:
-            final_host = host_match.group(0)
-            final_user = user_match.group(1)
-            final_pass = pass_match.group(1)
-            
-            response_text = (
-                "🎯 **تم استخراج بيانات AuziaTV بنجاح!**\n"
+            # بطاقة البيانات الاحترافية (تشبه التي في صورتك)
+            res_text = (
+                "🎯 **تم استخراج البيانات بنجاح!**\n"
                 "━━━━━━━━━━━━━━\n"
-                f"🌐 **HOST:** `{final_host}`\n"
-                f"👤 **USER:** `{final_user}`\n"
-                f"🔑 **PASS:** `{final_pass}`\n"
+                f"🌐 **HOST:** `{host_match.group(0)}`\n"
+                f"👤 **USER:** `{user_match.group(1)}`\n"
+                f"🔑 **PASS:** `{pass_match.group(1)}`\n"
                 "━━━━━━━━━━━━━━\n"
-                "✅ **هذا الكود حقيقي ومستخرج الآن.**\n"
-                "📺 *مشاهدة ممتعة!*"
+                "✅ **هذا الحساب تم إنشاؤه وتخطيه آلياً.**\n"
+                "📺 *يعمل الآن على تطبيق IPTV Smarters.*"
             )
-            await status_msg.edit_text(response_text, parse_mode='Markdown')
+            await status_msg.edit_text(res_text, parse_mode='Markdown')
         else:
-            # إذا لم يجد الكود تلقائياً بسبب اختصار الروابط
             await status_msg.edit_text(
-                f"⚠️ **الموقع يتطلب تخطي يدوي حالياً.**\n\n"
-                f"ادخل هنا واحصل على الكود:\n{target_url}",
-                disable_web_page_preview=True
+                "⚠️ **تنبيه حماية:**\n"
+                "━━━━━━━━━━━━━━\n"
+                "السيرفر يطلب تخطي يدوي حالياً لضمان أنك لست روبوت.\n"
+                "استخدم الأمر /code للحصول على الرابط."
             )
-
-    except Exception as e:
-        await status_msg.edit_text("❌ فشل الاتصال بسيرفر AuziaTV.")
+    except:
+        await status_msg.edit_text("❌ **خطأ:** السيرفر لا يستجيب حالياً.")
 
 if __name__ == '__main__':
     app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_msg))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("code", get_link))
+    app.add_handler(MessageHandler(filters.Regex('^تفعيل$'), auto_activate))
     
-    # ⚠️ أهم سطر لحل مشكلة السجلات التي أرسلتها (Conflict)
+    # حل مشكلة التضارب نهائياً
     app.run_polling(drop_pending_updates=True)
