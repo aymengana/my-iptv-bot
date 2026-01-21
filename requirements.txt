@@ -1,4 +1,3 @@
 python-telegram-bot
-selenium
-webdriver-manager
 requests
+flask
